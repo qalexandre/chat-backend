@@ -1,3 +1,4 @@
+const { isValidObjectId } = require("mongoose");
 const Room = require("../models/room");
 const User = require("../models/user");
 
@@ -28,18 +29,20 @@ const editRoom = async (id, title) => {
   }
 };
 
-const addUserInRoom = async (id, userId) => {
+const addUserInRoom = async (id, name) => {
   try {
-    let userInRoom = await Room.find({ participants: [userId] });
-    if (!userInRoom === []) return { error: "User has already in room " };
+    let user = await User.findOne({ name });
+
     let room = await Room.findOneAndUpdate(
-      id,
-      { $push: { participants: { $each: [userId], $position: -1 } } },
+      { _id: id },
+      {
+        $push: { participants: user._id },
+      },
       { upsert: true, new: true }
     );
     return room;
   } catch (error) {
-    return { error: "Error adding user in room" };
+    return { error: error };
   }
 };
 

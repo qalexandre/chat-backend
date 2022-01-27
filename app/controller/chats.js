@@ -37,4 +37,13 @@ const getChats = async (name) => {
   }
 };
 
-module.exports = { registerChat, getChats };
+const getChat = async (id) => {
+  try {
+    let chat = await Chat.findById(id);
+    return chat;
+  } catch (error) {
+    return { error: "Chat not find" };
+  }
+};
+
+module.exports = { registerChat, getChats, getChat };

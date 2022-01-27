@@ -24,6 +24,17 @@ const saveMessageRoom = async (message, userId, title) => {
   }
 };
 
+const deleteMessageRoom = async (room, message) => {
+  try {
+    let room = await Room.findOneAndUpdate(room._id, {
+      $pull: { messages: { id: message._id } },
+    });
+    return room;
+  } catch (error) {
+    return { error: error };
+  }
+};
+
 const saveMessageChat = async (message, userId, chatId) => {
   let user = await User.findById(userId);
   if (!user) return { error: "User not find" };

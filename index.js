@@ -35,7 +35,7 @@ const {
   saveMessageRoom,
   saveMessageChat,
 } = require("./app/controller/messages");
-const { registerChat, getChats } = require("./app/controller/chats");
+const { registerChat, getChats, getChat } = require("./app/controller/chats");
 
 io.on("connection", (socket) => {
   socket.on("register", async ({ name, password }, callback) => {
@@ -54,14 +54,28 @@ io.on("connection", (socket) => {
     const rooms = await getRooms(name);
     const chats = await getChats(name);
     var roomSelected;
+    socket.on("refresh", async () => {
+      const refreshedRooms = await getRooms(name);
+      const refreshedChats = await getChats(name);
+      socket.emit("getRooms", { user, rooms: refreshedRooms }, () => {});
+      socket.emit("getChats", { chats: refreshedChats }, () => {});
+    });
     socket.emit("getRooms", { user, rooms }, () => {});
-    socket.on("getRoom", async ({ room }, callback) => {
-      const roomGetted = await getRoom(room._id);
-      roomSelected = room._id;
-      socket.join(room._id);
+    socket.on("getRoom", async ({ newRoom, lastRoom }, callback) => {
+      const roomGetted = await getRoom(newRoom._id);
+      if (lastRoom) socket.leave(lastRoom._id);
+      roomSelected = newRoom._id;
+      socket.join(newRoom._id);
       callback(roomGetted);
     });
     socket.emit("getChats", { chats }, () => {});
+    socket.on("getChat", async ({ newChat, lastChat }, callback) => {
+      const chatGetted = await getChat(newChat._id);
+      if (lastChat) socket.leave(lastChat._id);
+      roomSelected = newChat._id;
+      socket.join(newChat._id);
+      callback(chatGetted);
+    });
     socket.on("createRoom", async ({ room }, callback) => {
       const roomCreated = await registerRoom(room, user._id);
       callback(roomCreated);
@@ -72,7 +86,7 @@ io.on("connection", (socket) => {
       // callback(chatCreated);
       //const room = registerRoom(roomName, user._id);
     });
-    socket.on("sendMessage", async ({ room, message }, callback) => {
+    socket.on("sendMessageRoom", async ({ room, message }, callback) => {
       const messageCreated = await saveMessageRoom(
         message,
         user._id,
@@ -81,6 +95,19 @@ io.on("connection", (socket) => {
       io.to(roomSelected).emit("message", {
         messageCreated,
       });
+    });
+    socket.on("sendMessageChat", async ({ chat, message }, callback) => {
+      const messageCreated = await saveMessageChat(message, user._id, chat._id);
+      io.to(roomSelected).emit("message", {
+        messageCreated,
+      });
+    });
+    socket.on("deleteMessageRoom", async ({ room, message }, callback) => {
+      const messageDeleted = await messa;
+    });
+    socket.on("addUserRoom", async ({ room, name }, callback) => {
+      const roomGetted = await addUserInRoom(room._id, name);
+      callback(roomGetted);
     });
   });
 
